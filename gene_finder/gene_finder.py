@@ -30,6 +30,10 @@ def get_complement(nucleotide):
     'G'
     """
     # TODO: implement this
+    nucleotide_comps = {'A': 'T', 'T': 'A', 'G': 'C', 'C': 'G'}
+    comp_nucleotide = nucleotide_comps[nucleotide]
+
+    return comp_nucleotide
     pass
 
 def get_reverse_complement(dna):
@@ -44,6 +48,20 @@ def get_reverse_complement(dna):
     'TGAACGCGG'
     """
     # TODO: implement this
+    list_dna = []
+    reverse_comp = []
+
+    for i in range(len(dna)):
+        list_dna.append(dna[i])
+
+    list_dna.reverse()
+
+    for i in range(len(list_dna)):
+        reverse_comp.append(get_complement(list_dna[i]))
+
+
+    return ''.join(reverse_comp)
+
     pass
 
 def rest_of_ORF(dna):
@@ -59,6 +77,15 @@ def rest_of_ORF(dna):
     'ATGAGA'
     """
     # TODO: implement this
+    ORF = ''
+
+    list_dna = [dna[i:i+3] for i in range(0, len(dna), 3)]
+
+    for i in range(len(list_dna)):
+        if list_dna[i] == "TAG" or list_dna[i] == "TGA" or list_dna[i] == "TAA":
+            return ''.join(list_dna[0:i])
+
+
     pass
 
 def find_all_ORFs_oneframe(dna):
@@ -74,6 +101,22 @@ def find_all_ORFs_oneframe(dna):
     ['ATGCATGAATGTAGA', 'ATGTGCCC']
     """
     # TODO: implement this
+    # list_dna = [dna[i:i+3] for i in range(0, len(dna), 3)]
+    # k = []
+    # ORF = []
+    #
+    # for i in range(len(list_dna)):
+    #     if list_dna[i] == "ATG":
+    #         k.append(i)
+    #
+    # k.append(len(list_dna))
+    #
+    # for i in range(len(k)):
+    #     ORF.append(''.join(list_dna[k[i-1]:k[i]]))
+    #
+    # for i in range(len(ORF)):
+    #     print rest_of_ORF(ORF[i])
+
     pass
 
 def find_all_ORFs(dna):
