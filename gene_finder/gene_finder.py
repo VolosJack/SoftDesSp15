@@ -282,6 +282,3 @@ def gene_finder(dna):
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
-
-dna = load_seq('./data/X73525.fa')
-print gene_finder(dna)
