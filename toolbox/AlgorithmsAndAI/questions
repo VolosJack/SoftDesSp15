@@ -1,0 +1,8 @@
+f_cost
+   -The f_cost screenshot shows all cells having the value of 18. 18 is the total number of moves along the shortest possible path from Paul to the cake. The cells blocked by the lava have a value of None because they cannot be accessed.
+
+g_cost
+    -The g_cost shows the number of moves along the shortest path already made from Paul to the cake.
+
+h_cost
+    -The h_cost is the number of moves that will be made along the shortest path from that cell to the cake.

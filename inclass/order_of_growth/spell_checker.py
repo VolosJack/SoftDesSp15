@@ -112,34 +112,40 @@ def spell_check_alg3(skip_factor, num_words_to_check):
             print "running time: %.10f" % (current_time - start_time)
             return current_time - start_time
 
-if __name__ == '__main__':
+def analyze(alg, words, n):
     """ select the algorithm to use for spell checking
         choices are:
             - spell_check_alg1
             - spell_check_alg2
             - spell_check_alg3
     """
-    spell_check = spell_check_alg1
-    n_trials = 1                   # the number of times to repeat a run
+    spell_check = alg
+    n_trials = n  # the number of times to repeat a run
     """ Specifies the number of words of the constitution to spell check.  Note:
         we start from the beginning of the constitution and check until the
         word limit is reached
     """
-    num_words_to_check = 2000
-    make_plot = False               # Should we make a plot of running time versus input size?
+    num_words_to_check = words
+    make_plot = True  # Should we make a plot of running time versus input size?
 
-    skip_factors = range(1,20)     # which skip factors to test 
-    if not(make_plot):
-        spell_check(1,num_words_to_check)
+    skip_factors = range(1, 20)  # which skip factors to test
+    if not (make_plot):
+        spell_check(1, num_words_to_check)
     else:
         total_words = len(load_words_as_list(1))
-        trials = np.zeros((n_trials,len(skip_factors)))
+        trials = np.zeros((n_trials, len(skip_factors)))
         for n in range(n_trials):
-            for i,skip in enumerate(skip_factors):
-                trials[n,i] = spell_check(skip, num_words_to_check)
-        pyplot.plot([float(total_words)/skip for skip in skip_factors],trials.mean(axis=0).T)
+            for i, skip in enumerate(skip_factors):
+                trials[n, i] = spell_check(skip, num_words_to_check)
+        pyplot.plot([float(total_words) / skip for skip in skip_factors], trials.mean(axis=0).T)
         ymin, ymax = pyplot.ylim()
-        pyplot.ylim(0,ymax)
+        pyplot.ylim(0, ymax)
         pyplot.xlabel('Dictionary Size')
         pyplot.ylabel('Running Time (seconds)')
-        pyplot.show()
+
+
+if __name__ == '__main__':
+    # analyze(spell_check_alg1, 2000, 10)
+    analyze(spell_check_alg2, 2000, 10)
+    analyze(spell_check_alg3, 2000, 10)
+    pyplot.show()

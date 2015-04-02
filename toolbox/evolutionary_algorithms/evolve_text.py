@@ -10,17 +10,20 @@ Usage:
 Full instructions are at:
 https://sites.google.com/site/sd15spring/home/project-toolbox/evolutionary-algorithms
 """
-
+from deap.tools import History
+import matplotlib.pyplot as plt
 import random
+from random import randrange
 import string
 
-import numpy    # Used for statistics
+import numpy  # Used for statistics
 from deap import algorithms
 from deap import base
 from deap import tools
 
 
-#-----------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
 # Global variables
 #-----------------------------------------------------------------------------
 
@@ -30,7 +33,7 @@ VALID_CHARS = string.ascii_uppercase + " "
 
 # Control whether all Messages are printed as they are evaluated
 VERBOSE = True
-
+history = History()
 
 #-----------------------------------------------------------------------------
 # Message object to use in evolutionary algorithm
@@ -51,6 +54,7 @@ class Message(list):
     We represent the Message as a list of characters (mutable) so it can
     be more easily manipulated by the genetic operators.
     """
+
     def __init__(self, starting_string=None, min_length=4, max_length=30):
         """
         Create a new Message individual.
@@ -80,7 +84,7 @@ class Message(list):
         #       ideally eval(repr(obj)) == obj
         # See also: http://stackoverflow.com/questions/1436703
         template = '{cls}({val!r})'
-        return template.format(cls=self.__class__.__name__,     # "Message"
+        return template.format(cls=self.__class__.__name__,  # "Message"
                                val=self.get_text())
 
     def get_text(self):
@@ -92,8 +96,34 @@ class Message(list):
 # Genetic operators
 #-----------------------------------------------------------------------------
 
-# TODO: Implement levenshtein_distance function (see Day 9 in-class exercises)
-# HINT: Now would be a great time to implement memoization if you haven't
+def memoize(f):
+    """ Memoization decorator for functions taking one or more arguments. """
+
+    class memodict(dict):
+        def __init__(self, f):
+            self.f = f
+
+        def __call__(self, *args):
+            return self[args]
+
+        def __missing__(self, key):
+            ret = self[key] = self.f(*key)
+            return ret
+
+    return memodict(f)
+
+
+@memoize
+def levenshtein_distance(s1, s2):
+    """ Computes the Levenshtein distance between two input strings """
+    if not s1: return len(s2)
+    if not s2: return len(s1)
+    if s1[0] == s2[0]: return levenshtein_distance(s1[1:], s2[1:])
+    l1 = levenshtein_distance(s1, s2[1:])
+    l2 = levenshtein_distance(s1[1:], s2)
+    l3 = levenshtein_distance(s1[1:], s2[1:])
+    return 1 + min(l1, l2, l3)
+
 
 def evaluate_text(message, goal_text, verbose=VERBOSE):
     """
@@ -104,7 +134,7 @@ def evaluate_text(message, goal_text, verbose=VERBOSE):
     distance = levenshtein_distance(message.get_text(), goal_text)
     if verbose:
         print "{msg:60}\t[Distance: {dst}]".format(msg=message, dst=distance)
-    return (distance, )     # Length 1 tuple, required by DEAP
+    return (distance, )  # Length 1 tuple, required by DEAP
 
 
 def mutate_text(message, prob_ins=0.05, prob_del=0.05, prob_sub=0.05):
@@ -119,17 +149,19 @@ def mutate_text(message, prob_ins=0.05, prob_del=0.05, prob_sub=0.05):
         Substitution:   Replace one character of the Message with a random
                         (legal) character
     """
+    index_value = randrange(0, len(message))
+    random_value = random.random()
 
-    if random.random() < prob_ins:
-        # TODO: Implement insertion-type mutation
-        pass
+    if random_value < prob_ins:
+        message[index_value:index_value] = random.choice(VALID_CHARS)
 
-    # TODO: Also implement deletion and substitution mutations
-    # HINT: Message objects inherit from list, so they also inherit
-    #       useful list methods
-    # HINT: You probably want to use the VALID_CHARS global variable
+    if random_value < prob_del:
+        del message[index_value]
 
-    return (message, )   # Length 1 tuple, required by DEAP
+    if random_value < prob_sub:
+        message[index_value] = random.choice(VALID_CHARS)
+
+    return (message, )  # Length 1 tuple, required by DEAP
 
 
 #-----------------------------------------------------------------------------
@@ -148,14 +180,16 @@ def get_toolbox(text):
     toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 
     # Genetic operators
-    toolbox.register("evaluate", evaluate_text, goal_text=text)
+    toolbox.register("evaluate", evaluate_text, goal_text=text, verbose=True)
     toolbox.register("mate", tools.cxTwoPoint)
-    toolbox.register("mutate", mutate_text)
-    toolbox.register("select", tools.selTournament, tournsize=3)
+    toolbox.register("mutate", mutate_text, prob_sub=.45, prob_ins=.35, prob_del=.25)
+    toolbox.register("select", tools.selBest)
 
     # NOTE: You can also pass function arguments as you define aliases, e.g.
     #   toolbox.register("individual", Message, max_length=200)
     #   toolbox.register("mutate", mutate_text, prob_sub=0.18)
+    toolbox.decorate("mate", history.decorator)
+    toolbox.decorate("mutate", history.decorator)
 
     return toolbox
 
@@ -170,7 +204,7 @@ def evolve_string(text):
 
     # Get configured toolbox and create a population of random Messages
     toolbox = get_toolbox(text)
-    pop = toolbox.population(n=300)
+    pop = toolbox.population(n=500)
 
     # Collect statistics as the EA runs
     stats = tools.Statistics(lambda ind: ind.fitness.values)
@@ -181,13 +215,21 @@ def evolve_string(text):
 
     # Run simple EA
     # (See: http://deap.gel.ulaval.ca/doc/dev/api/algo.html for details)
-    pop, log = algorithms.eaSimple(pop,
-                                   toolbox,
-                                   cxpb=0.5,    # Prob. of crossover (mating)
-                                   mutpb=0.2,   # Probability of mutation
-                                   ngen=500,    # Num. of generations to run
-                                   stats=stats)
+    pop, log = algorithms.eaMuPlusLambda(pop,
+                                         toolbox,
+                                         mu=150,
+                                         lambda_=700,
+                                         cxpb=0.75,  # Prob. of crossover (mating)
+                                         mutpb=0.25,  # Probability of mutation
+                                         ngen=200,  # Num. of generations to run
+                                         stats=stats)
+    import networkx
 
+    graph = networkx.DiGraph(history.genealogy_tree)
+    graph = graph.reverse()  # Make the grah top-down
+    colors = [toolbox.evaluate(history.genealogy_history[i])[0] for i in graph]
+    networkx.draw(graph, node_color=colors)
+    plt.show()
     return pop, log
 
 
@@ -199,12 +241,18 @@ if __name__ == "__main__":
 
     # Get goal message from command line (optional)
     import sys
+    import multiprocessing
+
     if len(sys.argv) == 1:
         # Default goal of the evolutionary algorithm if not specified.
         # Pretty much the opposite of http://xkcd.com/534
         goal = "SKYNET IS NOW ONLINE"
     else:
         goal = " ".join(sys.argv[1:])
+
+    toolbox = get_toolbox(goal)
+    pool = multiprocessing.Pool()
+    toolbox.register("map", pool.map)
 
     # Verify that specified goal contains only known valid characters
     # (otherwise we'll never be able to evolve that string)
@@ -216,3 +264,6 @@ if __name__ == "__main__":
 
     # Run evolutionary algorithm
     pop, log = evolve_string(goal)
+
+
+

@@ -1,6 +1,7 @@
 """ Evaluate the performance of various DNA proessing algorithms """
 
 from random import randint
+import matplotlib.pyplot as plt
 import time
 
 def generate_random_dna(n):
@@ -72,3 +73,25 @@ if __name__ == '__main__':
     stop_time = time.time()
 
     print stop_time - start_time
+
+    times = []
+    times2 = []
+    for n in range(1,1000000,50):
+        dna_n = n
+        dna = generate_random_dna(dna_length)
+        start_time = time.time()
+        rev_complement1 = reverse_complement_1(dna)
+        stop_time = time.time()
+
+        times.append(stop_time - start_time)
+
+        dna = generate_random_dna(dna_length)
+        start_time = time.time()
+        rev_complement2 = reverse_complement_2(dna)
+        stop_time = time.time()
+
+        times2.append(stop_time - start_time)
+
+    plt.plot(times)
+    plt.plot(times2)
+    plt.show()
